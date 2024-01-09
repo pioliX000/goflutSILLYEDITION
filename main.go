@@ -7,6 +7,7 @@ import (
 	"image"
 	_ "image/jpeg"
 	_ "image/png"
+	"math/rand"
 	"math"
 	"net"
 	"os"
@@ -14,6 +15,9 @@ import (
 	"time"
 )
 
+type Tuple struct {
+	X, Y, Z int
+}
 
 type size struct {
 	width  int
@@ -25,6 +29,11 @@ type chunk struct {
 	width  int
 	height int
 	scale  float64
+}
+
+func getRandomTuple(tuples []Tuple) Tuple {
+	index := rand.Intn(len(tuples))
+	return tuples[index]
 }
 
 func getSize(conn net.Conn) *size {
@@ -72,25 +81,36 @@ func drawRect(x, y, w, h, r, g, b int, conn net.Conn) {
 	}
 }
 
-func bouncingBall(x, y, xvel, yvel, rad, r, g, b int, conn net.Conn) {
+func bouncingBall(x int, y int, xvel int, yvel int, rad int, conn net.Conn) {
+	colors := []Tuple{
+		{0, 0, 255},
+		{0, 255, 0},
+		{255, 0, 0},
+	}
+
 	for true {
+		randomTuple := getRandomTuple(colors)
+
+		r := randomTuple.X
+		g := randomTuple.Y
+		b := randomTuple.Z
+
 		x += xvel
 		y += yvel
 
 		if x > 1280 || x < 0 {
-			xvel *= -1
+			xvel = int(float64(xvel) * -1.09)
 		}
 		if y > 720 || y < 0 {
-			yvel *= -1
+			yvel = int(float64(yvel) * -1.09)
 		}
-
-		drawCircle(x-xvel, y-yvel, rad, 255, 255, 255, conn)
 		drawCircle(x, y, rad, r, g, b, conn)
 	}
 }
 
 func bouncingImage(x, y, xvel, yvel int, path string, conn net.Conn, threads int) {
     f, err := os.Open(path)
+
     if err != nil {
         fmt.Fprintln(os.Stderr, "Can't open image womp womp")
         os.Exit(1)
@@ -98,26 +118,25 @@ func bouncingImage(x, y, xvel, yvel int, path string, conn net.Conn, threads int
     
     img,  _, err  := image.Decode(f)
     bounds := img.Bounds()
-    imgWidth := bounds.Max.X
-    imgHeight := bounds.Max.Y
+    imgWidth := int(float64(bounds.Max.X)*0.15)
+    imgHeight := int(float64(bounds.Max.Y)*0.15)
 
     for true {
         x += xvel
         y += yvel
-        canvasSize := getSize(conn)
 
-        if x > canvasSize.width || x < 0 {
-            xvel *= -1
-        }
-        if y > canvasSize.height || y < 0{
-            yvel *= -1
+        if x+imgWidth > 1280 || x < 0 {
+            xvel = int(float64(xvel) * -1.15)
         }
 
-        drawImage(path, x, y, threads, 0.1, conn)
-        time.Sleep(50*time.Millisecond)
-        drawRect(x-xvel, y-yvel, int(float64(imgWidth) * 0.1), int(float64(imgHeight) * 0.1), 255, 255, 255, conn)
+        if y+imgHeight > 720 || y < 0 {
+            yvel = int(float64(yvel) * -1.15)
+        }
+
+        drawImage(path, x, y, threads, 0.15, conn)
     }
 }
+
 func makeChunks(threadsCount int, chunkWidth int, chunkHeight int, chunkScale float64) []chunk {
 
 	chunks := make([]chunk, threadsCount)   // As many chunks as threads
@@ -200,7 +219,7 @@ func main() {
 
 	var host      *string = flag.String("host", "", "The PixelFlut server host ip or domain.")
 	var port      *string = flag.String("port", "", "The port of the PixelFlut server.")
-	var imagePath *string = flag.String("image", "", "The path to the image to draw.")
+	// var imagePath *string = flag.String("image", "", "The path to the image to draw.")
 	var threads      *int = flag.Int("threads", 1, "Number of threads to use.")
 
 	required := []string{"host", "port"}
@@ -228,8 +247,10 @@ func main() {
 	}
 	defer conn.Close()
 
-	bouncingImage(0, 0, 1, 1, *imagePath, conn, *threads)
-
+	// bouncingImage(0, 0, 50, 50, *imagePath, conn, *threads)
+	
+	bouncingBall(0, 0, 5, 5, 10, conn)
+	
 	// err = drawImage(*imagePath, 800, 0, *threads, 0.5, conn)
 	// if err != nil {
 	//     fmt.Fprintln(os.Stderr, "Could not draw image:" + "\n", err)
