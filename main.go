@@ -72,6 +72,22 @@ func drawRect(x, y, w, h, r, g, b int, conn net.Conn) {
 	}
 }
 
+func bouncingBall(x, y, xvel, yvel, rad, r, g, b int, conn net.Conn) {
+	for true {
+		x += xvel
+		y += yvel
+
+		if x > 1280 || x < 0 {
+			xvel *= -1
+		}
+		if y > 720 || y < 0{
+			yvel *= -1
+		}
+
+		drawCircle(x-xvel, y-yvel, rad, 255, 255, 255, conn)
+		drawCircle(x, y, rad, r, g, b, conn)
+	}
+}
 func makeChunks(threadsCount int, chunkWidth int, chunkHeight int, chunkScale float64) []chunk {
 
 	chunks := make([]chunk, threadsCount)   // As many chunks as threads
@@ -182,17 +198,11 @@ func main() {
 	}
 	defer conn.Close()
 
-
-	for true {
-		drawCircle(640, 360, 100, 200, 200, 200, conn)
-		drawCircle(640, 360, 100, 255, 255, 255, conn)
-	}
+	bouncingBall(0, 0, 1, 2, 8, 100, 100, 100, conn)
 
 	// err = drawImage(*imagePath, 800, 0, *threads, 0.5, conn)
 	// if err != nil {
 	//     fmt.Fprintln(os.Stderr, "Could not draw image:" + "\n", err)
 	//     os.Exit(1)
 	// }
-
-
 }
