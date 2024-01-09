@@ -51,12 +51,25 @@ func writePixel(x, y, r, g, b, a int, conn net.Conn) {
 	conn.Write([]byte(cmd))
 }
 
-func drawRect(x, y, w, h, r, g, b int, conn net.Conn) {
-	for i := x; i < x+w; i++ {
-		for j := y; j < y+h; j++ {
-			writePixel(i, j, r, g, b, 255, conn)
+func drawCircle(x, y, rad, r, g, b int, conn net.Conn) {
+	for j := 0; j < rad; j++ {
+		for i := 0; i < rad; i++ {
+            if (i*i + j*j) < rad*rad {
+    			writePixel(x-i, y-j, r, g, b, 255, conn)
+                writePixel(x+i, y+j, r, g, b, 255, conn)
+                writePixel(x-i, y+j, r, g, b, 255, conn)
+                writePixel(x+i, y-j, r, g, b, 255, conn)
+            }
 		}
 	}
+}
+
+func drawRect(x, y, w, h, r, g, b int, conn net.Conn) {
+    for i := x; i < x+w; i++ {
+        for j := y; j < y+h; j++ {
+            writePixel(i, j, r, g, b, 255, conn)
+        }
+    }
 }
 
 func makeChunks(threadsCount int, chunkWidth int, chunkHeight int, chunkScale float64) []chunk {
@@ -141,7 +154,7 @@ func main() {
 
     var host      *string = flag.String("host", "", "The PixelFlut server host ip or domain.")
     var port      *string = flag.String("port", "", "The port of the PixelFlut server.")
-    var imagePath *string = flag.String("image", "", "The path to the image to draw.")
+    // var imagePath *string = flag.String("image", "", "The path to the image to draw.")
     var threads      *int = flag.Int("threads", 1, "Number of threads to use.")
 
     required := []string{"host", "port"}
@@ -169,11 +182,15 @@ func main() {
     }
     defer conn.Close()
 
-    err = drawImage(*imagePath, 800, 0, *threads, 0.5, conn)
-    if err != nil {
-        fmt.Fprintln(os.Stderr, "Could not draw image:" + "\n", err)
-        os.Exit(1)
+
+    for true {
+        drawCircle(640, 360, 100, 200, 200, 200, conn)
+        drawCircle(640, 360, 100, 255, 255, 255, conn)
     }
 
-
+    // err = drawImage(*imagePath, 800, 0, *threads, 0.5, conn)
+    // if err != nil {
+    //     fmt.Fprintln(os.Stderr, "Could not draw image:" + "\n", err)
+    //     os.Exit(1)
+    // }
 }
